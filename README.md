@@ -1,5 +1,5 @@
-### HO236 - Econometria de Séries Temporais - 1S/2021Imprimir 
-Pós-Graduação
+### HO236 - Econometria de Séries Temporais
+Doutorado 
 
 Ementa:
 
