@@ -1,6 +1,6 @@
 ### HO236 - Econometria de Séries Temporais
 
-Disciplina eletiva do programa de Pós-Graduação em Economia e Desenvolvimento Econômico.
+Disciplina eletiva do programa de Pós-Graduação em Economia e Desenvolvimento Econômico do Instituto de Economia da Unicamp.
 
 Doutorado/Mestrado 
 
