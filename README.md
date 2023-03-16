@@ -1,5 +1,7 @@
 ### HO236 - Econometria de Séries Temporais
-Doutorado 
+
+Disciplina eletiva do programa de Pós-Graduação em Economia e Desenvolvimento Econômico.
+Doutorado/Mestrado 
 
 Ementa:
 
