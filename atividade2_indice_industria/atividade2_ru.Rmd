@@ -1,0 +1,177 @@
+---
+title: "Atividade 2 - Raíz Unitária"
+author: "Rodrigo Cabral"
+date: "21/04/2023"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Índice de produção da industria de transformação
+```{r}
+library(readxl)
+
+ind=read_excel('indice_industria_transf.xlsx')
+
+ind = ts(ind[,2],start=c(2002,1),freq=12)
+
+plot(ind,ylab='Índice da industria de transformação')
+acf(ind)
+
+#Primeira Diferença
+dind=diff(ind)
+plot(dind,ylab='L(1) Índice da industria de transformação')
+acf(dind)
+
+
+```
+
+
+# Teste de Raiz Unitária
+
+# Leitura dos Dados - india Industrial
+```{r}
+library(readxl)
+
+ind=read_excel('indice_industria_transf.xlsx')
+
+y = ts(ind[,2],start=c(2002,1),freq=12)
+
+plot(y,ylab='Índice da industria de transformação')
+
+```
+
+
+## Teste de RU ADF
+
+```{r}
+#install.packages('urca')
+library(urca)
+
+#Modelo com constante
+
+ind.df1 =ur.df(y,type='trend',lags=1, selectlags = 'BIC')
+summary(ind.df1)
+
+plot(ind.df1)
+
+```
+Aplicando o teste ADF e analisando o resultando para a estatística T = -2,43, tem-se que não pode-se rejeitar a H0, logo a série possui pelo menos uma raíz unitária. 
+
+
+## Teste ADF - indice Industria de transformação
+
+
+```{r}
+ind.df1=ur.df(y,type='trend',lags=0)
+plot(ind.df1)
+
+ind.df2=ur.df(y,type='trend',lags=1)
+plot(ind.df2)
+summary(ind.df2)
+
+ind.df2=ur.df(y,type='trend',lags=12,selectlags = 'AIC')
+plot(ind.df2)
+summary(ind.df2)
+
+ind.df2=ur.df(y,type='trend',lags=12,selectlags = 'BIC')
+plot(ind.df2)
+summary(ind.df2)
+
+ind.df3=ur.df(y,type='drift',lags=12,selectlags = 'BIC')
+plot(ind.df3)
+summary(ind.df3)
+
+ind.df4=ur.df(y,type='none',lags=12,selectlags='BIC')
+plot(ind.df4)
+summary(ind.df4)
+
+#teste em relação a variação da série
+dind=diff(y)
+
+plot(dind)
+
+dind.df=ur.df(dind,type='none',lags=0)
+plot(dind.df)
+summary(dind.df)
+
+dind.df1=ur.df(dind,type='none',lags=24,selectlags='BIC')
+plot(dind.df1)
+summary(dind.df1)
+```
+Para a série diferenciada uma vez L(1), nota-se que o teste de estatística T=-11.153 está a esquerda de tau1 5%, assim rejeita-se a hipótese nula, logo a série diferenciada uma vez não possui raíz unitária e é estacionária.
+
+# Teste de PP
+
+```{r}
+#Série índice da industria de transformação
+#modelo com constante
+library(urca)
+
+ind.pp = ur.pp(y,type='Z-tau',model='constant',lags='short')
+plot(ind.pp)
+summary(ind.pp)
+
+y.pp = ur.pp(y,type='Z-alpha',model='constant',lags='short')
+plot(y.pp)
+summary(y.pp)
+
+```
+
+```{r}
+#Modelo com constante e tendência
+
+ind.pp1= ur.pp(y, type='Z-tau',model='trend',lags='short')
+plot(ind.pp1)
+summary(ind.pp1)
+
+ind.pp2=ur.pp(y,type='Z-tau',model='constant',lags='short')
+summary(ind.pp2)
+```
+
+
+
+# Teste KPSS
+
+```{r}
+#indice Industria de transformação
+ind.kpss=ur.kpss(y,type='mu',lags='short')
+plot(ind.kpss)
+
+summary(ind.kpss)
+
+#indice Industria de transformação
+ind.kpss2=ur.kpss(y,type='tau',lags='short')
+plot(ind.kpss2)
+
+summary(ind.kpss2)
+
+#install.packages('forecast')
+#library(forecast)
+#ndiffs(ind)
+```
+
+
+```{r}
+#indice Industria de transformação
+
+ind.kpss1=ur.kpss(y,type='tau',lags='long')
+plot(ind.kpss1)
+summary(ind.kpss1)
+
+ind.kpss2=ur.kpss(y,type='mu',lags='long')
+plot(ind.kpss2)
+summary(ind.kpss2)
+```
+
+
+
+
+
+
+
+
+
+

@@ -22,6 +22,8 @@ acf(cambio)
 
 #Primeira Diferença
 dcambio=diff(cambio)
+plot(dcambio)
+acf(dcambio)
 
 
 ```
