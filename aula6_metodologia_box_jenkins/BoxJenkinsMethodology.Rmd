@@ -1,5 +1,5 @@
 ---
-title: "Aplicação"
+title: "Aplicação - BJ"
 output: word_document
 ---
 
@@ -25,8 +25,8 @@ require(tseries)
 require(stats)
 library(FinTS)
 library(urca)
-library(TTR)
 library(readxl)
+
 ```
 
 ```{r}
@@ -46,7 +46,9 @@ Acf(diff(pib_agro,lag=4),type='partial')
 auto.arima(pib_agro)
 #ARIMA(0,1,2)(0,1,1)[4]
 
-ajuste=Arima(pib_agro, order = c(0, 1, 2),
+ano=2018
+trim=4
+ajuste=Arima(window(pib_agro,end=c(ano,trim)), order = c(0, 1, 2),
      seasonal = list(order = c(0, 1, 1), period = 4),
      method = c("ML"))
 ajuste
@@ -104,8 +106,12 @@ ArchTest(ajuste$residuals, lag=4) # Teste ARCH - Teste p/ heteroc. condicional
 ArchTest(ajuste$residuals, lag=8)
 ArchTest(ajuste$residuals, lag=12)
 
+
 ```
 
+```{r}
+checkresiduals(ajuste)
+```
 
 # Validação/Previsão
 ```{r}
@@ -137,7 +143,7 @@ accuracy(pib.model2)
 
 ```{r}
 # Cálculo do erro de Previsão vários passos à frente
-passos=9
+passos=16
 prev=forecast(ajuste,h=passos,level=c(0.95), biasadj=T)
 prev
 plot(prev)
@@ -149,11 +155,13 @@ lines(pib_agro)
 lines(ajuste$fit,col='blue')
 lines(pib.model2$fit,col='red')
 
+accuracy(forecast(ajuste,h=passos,biasadj=T),window(pib_agro,start=ano1))
+
 ```
 
 #Previsão vários passos a frente Futuro
 ```{r}
-H=9
+H=12
 modelo.final <- Arima(pib_agro, order = c(0, 1, 2),
      seasonal = list(order = c(0, 1, 1), period = 4),
      method = c("ML"))

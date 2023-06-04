@@ -20,6 +20,7 @@ require(stats)
 library(FinTS)
 library(urca)
 library(TTR)
+library(sandwich)
 
 dados1 = read_excel("TaxaDesemprego.xlsx")
 
@@ -31,54 +32,9 @@ grid()
 
 #Função de Autocorrelação
 Acf(desemp, type='correlation',lag.max = 36)
+
+monthplot(desemp)
 ```
-
-# Obtenção da série dessazonalizada por Média Móvel
-```{r}
-decomp1.mm = decompose(desemp, type='multiplicative')
-
-sazonal1.mm = decomp1.mm$seasonal
-tendencia1.mm = decomp1.mm$trend
-residuos1.mm = decomp1.mm$random
-
-indice.saz1 = decomp1.mm$figure
-
-dessaz.des = ts(desemp - sazonal1.mm, 
-                start = c(1985,1), freq = 12)
-
-par(mfrow=c(1,1))
-plot(desemp, xlab = NULL, ylab = "Taxa de desemprego")
-par(new=T)
-plot(dessaz.des, col='blue',ann=F)
-#Observa-se que a série dessazonalizada tem praticamente o mesma padrão da série original
-
-Acf(dessaz.des, type="correlation",lag.max = 36)
-Acf(dessaz.des, type="partial",lag.max = 36)
-```
-
-# Obtenção da série dessazonalizada por Dummies
-```{r}
-library(gets)
-
-d=periodicdummies(desemp)
-
-n = length(desemp)
-trend = 1:n
-
-d=ts(d)
-X = cbind(1,trend,d[,1:11])
-
-reg = lm(desemp[1:n]~X[1:n,]-1)
-fit = ts(reg$fit,start=c(1985,1),frequency=12)
-
-par(mfrow=c(1,1))
-plot(desemp,ylim=range(desemp,fit))
-lines(fit,col=2)
-legend("bottomright",legend=c("Data","Fit"),col=1:2,lty=1)
-title("Deterministic cycle")
-
-```
-
 
 # Teste de Raiz Unitária
 ## Parte não sazonal
@@ -91,6 +47,7 @@ summary(desemp.drift)
 
 desemp.none=ur.df(desemp,type='none',lags=24,selectlags='BIC')
 summary(desemp.none)
+
 ```
 
 
@@ -102,14 +59,26 @@ Acf(diff(desemp,lag=1,differences=1),ylab="Diff 1",lag.max = 36)
 
 # Teste de estacionariedade da parte sazonal
 ```{r}
-Acf(diff(diff(log(desemp),lag=1,differences=1),lag=12,differences=1),ylab="Diff 1",lag.max = 36)
+Acf(diff(diff(desemp,lag=1,differences=1),lag=12,differences=1),ylab="Diff 1",lag.max = 36)
 ```
 
 
 ```{r}
-
-desemp.none=ur.df(diff(diff(log(desemp),lag=1,differences=1),lag=12,differences=1),type='none',lags=24,selectlags='BIC')
+desemp.none=ur.df(diff(diff(desemp,lag=1,differences=1),lag=12,differences=1),type='none',lags=24,selectlags='BIC')
 summary(desemp.none)
+```
+
+# Teste de Raiz Unitária Sazonal
+```{r}
+#Teste DHF
+#Instalando e carregando pacote de Dummies sazonais
+#install.packages("gets")
+library(gets)
+
+teste.sazonal=dynlm(diff(desemp,12,1)~ season(desemp) + L(desemp,12)+ diff(L(desemp,1:12),12,1))
+summary(teste.sazonal)         
+acf(teste.sazonal$residuals)
+
 ```
 
 
@@ -120,8 +89,7 @@ summary(desemp.none)
 ```{r}
 #valor_param é definido pelo usuário o qual corresponde ao número máximo de ordem para a parte autoregressiva e média móvel
 valor_param=2
-dmat=(valor_param+1)^4 #valor_param+1, pois há três possibilidades para cada 
-#ordem do modelo, caso valor_param=2;4 porque temos 4 ordens a serem determinadas.
+dmat=(valor_param+1)^4 #valor_param+1, pois há três possibilidades para cada ordem do modelo, caso valor_param=2;
 bics = matrix(0,dmat,5) #Matriz com 81 (3^4) linhas e 5 colunas, com valores 0
 aics = matrix(0,dmat,5) 
 
@@ -135,10 +103,9 @@ for (i in 0:p_max)
     for (k in 0:P_max)
       for (l in 0:Q_max){
         s = s + 1
-        bics[s,] = c(i,j,k,l,Arima(window(desemp,end=c(2015,12)), 
-                                   order=c(i,1,j),seasonal=list(order=c(k,1,l),period=12), lambda=0)$bic)
+        bics[s,] = c(i,j,k,l,Arima(window(desemp,end=c(2015,12)),              order=c(i,1,j),seasonal=list(order=c(k,1,l),period=12), lambda=0)$bic)
         aics[s,] = c(i,j,k,l,Arima(window(desemp,end=c(2015,12)), 
-                                   order=c(i,1,j),seasonal=list(order=c(k,1,l),period=12), lambda=0)$aic)
+order=c(i,1,j),seasonal=list(order=c(k,1,l),period=12), lambda=0)$aic)
       }
 bics[bics[,5]==min(bics[,5]),]
 aics[aics[,5]==min(aics[,5]),]
@@ -147,8 +114,7 @@ aics[aics[,5]==min(aics[,5]),]
 # Modelo SARIMA(2,1,2)(0,1,1)_12, critério BIC
 
 ```{r}
-desemp.model1 = Arima(window(desemp,end=c(2015,12)), 
-                                   order=c(2,1,2),seasonal=list(order=c(0,1,1),period=12), lambda=0)
+desemp.model1 = Arima(window(desemp,end=c(2015,12)),                                    order=c(2,1,2),seasonal=list(order=c(0,1,1),period=12), lambda=0)
 
 desemp.model1
 plot(desemp,ylim=range(desemp,desemp.model1$fit))
@@ -162,8 +128,7 @@ title("SARIMA(2,1,2)(0,1,1)[12]")
 # Modelo SARIMA(2,1,2)(1,1,1)_12, cirtério AIC
 
 ```{r}
-desemp.model2 = Arima(window(desemp,end=c(2015,12)), 
-                                   order=c(2,1,2),seasonal=list(order=c(1,1,1),period=12), lambda=0)
+desemp.model2 = Arima(window(desemp,end=c(2015,12)),                                    order=c(2,1,2),seasonal=list(order=c(1,1,1),period=12), lambda=0)
 
 desemp.model2
 plot(desemp,ylim=range(desemp,desemp.model2$fit))
@@ -203,6 +168,8 @@ shapiro.test(desemp.model1$residuals)   # Teste Shapiro-Wilk
 ArchTest(desemp.model1$residuals, lag=4) 
 ArchTest(desemp.model1$residuals, lag=8)
 ArchTest(desemp.model1$residuals, lag=12)
+
+checkresiduals(desemp.model1)
 ```
 
 
@@ -234,6 +201,8 @@ shapiro.test(desemp.model2$residuals)   # Teste Shapiro-Wilk
 ArchTest(desemp.model2$residuals, lag=4) 
 ArchTest(desemp.model2$residuals, lag=8)
 ArchTest(desemp.model2$residuals, lag=12)
+
+checkresiduals(desemp.model2)
 ```
 
 
@@ -248,7 +217,7 @@ d.previsto1 <- matrix(NA, nrow=length(window(desemp, start=2015)), ncol=1)
 d.errop1 <- matrix(NA, nrow=length(window(desemp, start=2015)), ncol=1)
 
 for (i in 1:length(d.erro1)){
-  d.previsto1[i] = predict(Arima(desemp[1:(length(window(desemp, end=c(2014, 12)))+i-1)],                          order=c(2,1,2),seasonal=list(order=c(0,1,1),period=12,method='ML',n.ahead=1)),lambda=0)$pred
+  d.previsto1[i] = predict(Arima(desemp[1:(length(window(desemp, end=c(2014, 12)))+i-1)],order=c(2,1,2),seasonal=list(order=c(0,1,1),period=12,method='ML',n.ahead=1)),lambda=0)$pred
     d.real1[i]=ts(desemp[(length(window(desemp, end=c(2014, 12)))+i)],start=2015, freq=12)
   d.previsto1=ts(d.previsto1,start=2015,freq=12)
   d.erro1[i]=d.real1[i]-d.previsto1[i]
@@ -281,7 +250,7 @@ d.previsto2 <- matrix(NA, nrow=length(window(desemp, start=2015)), ncol=1)
 d.errop2 <- matrix(NA, nrow=length(window(desemp, start=2015)), ncol=1)
 
 for (i in 1:length(d.erro1)){
-  d.previsto2[i] = predict(Arima(desemp[1:(length(window(desemp, end=c(2014, 12)))+i-1)],                          order=c(2,1,2),seasonal=list(order=c(1,1,1),period=12,method='ML',n.ahead=1)),lambda=0)$pred
+  d.previsto2[i] = predict(Arima(desemp[1:(length(window(desemp, end=c(2014, 12)))+i-1)],order=c(2,1,2),seasonal=list(order=c(1,1,1),period=12,method='ML',n.ahead=1)),lambda=0)$pred
     d.real2[i]=ts(desemp[(length(window(desemp, end=c(2014, 12)))+i)],start=2015, freq=12)
   d.previsto2=ts(d.previsto2,start=2015,freq=12)
   d.erro2[i]=d.real2[i]-d.previsto2[i]
@@ -309,7 +278,7 @@ grid()
 
 ## Modelo SARIMA(2,1,2)(0,1,1)_12
 ```{r}
-sarima1=Arima(desemp,                                    order=c(2,1,2),seasonal=list(order=c(0,1,1),period=12), lambda=0)
+sarima1=Arima(desemp, order=c(2,1,2),seasonal=list(order=c(0,1,1),period=12), lambda=0)
 d.prev1=forecast(sarima1,h=12,level=c(0.90, 0.95))
 d.prev1
 plot(d.prev1)

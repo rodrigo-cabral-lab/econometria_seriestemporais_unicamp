@@ -40,7 +40,7 @@ acf(ind)
 #Primeira Diferença
 dind=diff(ind)
 plot(dind,ylab='L(1) Índice da industria de transformação')
-acf(dind)
+acf(dind, ylab='ACF (diff)')
 
 
 ```
