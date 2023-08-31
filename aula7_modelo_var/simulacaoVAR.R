@@ -6,7 +6,7 @@
 library(readxl)
 #Exercício IPCA
 #leitura dos dados
-IPCA <- read_excel("IPCA.xlsx")
+#IPCA <- read_excel("IPCA.xlsx")
 ipca=ts(IPCA[,2], start=1998, freq=12)
 par(mfrow=c(1,1))
 plot(ipca,main='IPCA',ylab='Indice',xlab='Meses',col='blue',bty='l')
